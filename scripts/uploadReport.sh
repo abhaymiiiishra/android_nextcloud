@@ -43,7 +43,6 @@ upload() {
 #6: DRONE_PULL_REQUEST
 #7: GITHUB_TOKEN
 
-URL=https://nextcloud.kaminsky.me/remote.php/webdav/android-integrationTests
 ID=$3
 USER=$1
 PASS=$2
@@ -54,6 +53,7 @@ GITHUB_TOKEN="$7"
 
 REMOTE_FOLDER=$ID-$TYPE-$BRANCH-$(date +%H-%M)
 BRANCH_TYPE=$BRANCH-$TYPE
+URL=https://nextcloud.kaminsky.me/remote.php/dav/files/$USER/android-integrationTests
 
 set -e
 
