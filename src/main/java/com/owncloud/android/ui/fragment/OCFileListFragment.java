@@ -1498,7 +1498,13 @@ public class OCFileListFragment extends ExtendedListFragment implements
         prepareCurrentSearch(event);
         searchFragment = true;
         setEmptyListLoadingMessage();
-        mAdapter.setData(new ArrayList<>(), SearchType.NO_SEARCH, mContainerActivity.getStorageManager(), mFile, true);
+        mAdapter.setData(new ArrayList<>(),
+                         SearchType.NO_SEARCH,
+                         mContainerActivity.getStorageManager(),
+                         mFile,
+                         true,
+                         -1,
+                         -1);
 
         setFabVisible(false);
 
@@ -1556,7 +1562,9 @@ public class OCFileListFragment extends ExtendedListFragment implements
                                              currentSearchType,
                                              storageManager,
                                              mFile,
-                                             true);
+                                             true,
+                                             -1,
+                                             -1);
                         }
 
                         final ToolbarActivity fileDisplayActivity = (ToolbarActivity) getActivity();
