@@ -856,14 +856,11 @@ public class OCFileListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         notifyDataSetChanged();
     }
 
-    // TODO split up
     public void setData(List<Object> objects,
                         ExtendedListFragment.SearchType searchType,
                         FileDataStorageManager storageManager,
                         @Nullable OCFile folder,
-                        boolean clear,
-                        long startDate,
-                        long endDate) {
+                        boolean clear) {
         if (storageManager != null && mStorageManager == null) {
             mStorageManager = storageManager;
             showShareAvatar = mStorageManager.getCapability(user.getAccountName()).getVersion().isShareesOnDavSupported();
@@ -1024,7 +1021,6 @@ public class OCFileListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 ContentValues cv = new ContentValues();
                 cv.put(ProviderMeta.ProviderTableMeta.VIRTUAL_TYPE, type.toString());
                 cv.put(ProviderMeta.ProviderTableMeta.VIRTUAL_OCFILE_ID, ocFile.getFileId());
-                cv.put(ProviderMeta.ProviderTableMeta.VIRTUAL_OCFILE_REMOTE_ID, ocFile.getRemoteId());
 
                 contentValues.add(cv);
             } catch (RemoteOperationFailedException e) {
