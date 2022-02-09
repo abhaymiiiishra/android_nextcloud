@@ -2415,7 +2415,7 @@ public class FileDataStorageManager {
             }
         }
     }
-    
+
     public List<OCFile> getAllFavorites() {
         String selection = ProviderTableMeta.FILE_ACCOUNT_OWNER + AND + ProviderTableMeta.FILE_FAVORITE + " =?";
         String[] selectionArgs = new String[]{user.getAccountName(), "1"};
@@ -2423,13 +2423,27 @@ public class FileDataStorageManager {
         return getFiles(selection, selectionArgs);
     }
 
+    public List<OCFile> getImageFavorites() {
+        String selection = ProviderTableMeta.FILE_ACCOUNT_OWNER + AND +
+            ProviderTableMeta.FILE_FAVORITE + AND +
+            ProviderTableMeta.FILE_CONTENT_TYPE + " LIKE ?";
+
+        String[] selectionArgs = new String[]{
+            user.getAccountName(),
+            "1",
+            "image/%"
+        };
+
+        return getFiles(selection, selectionArgs);
+    }
+
     public List<OCFile> getAllFiles() {
         String selection = ProviderTableMeta.FILE_ACCOUNT_OWNER + "= ? ";
         String[] selectionArgs = new String[]{user.getAccountName()};
-        
+
         return getFiles(selection, selectionArgs);
     }
-    
+
     private List<OCFile> getFiles(String selection, String[] selectionArgs) {
         List<OCFile> folderContent = new ArrayList<>();
 
