@@ -2415,11 +2415,22 @@ public class FileDataStorageManager {
             }
         }
     }
+    
+    public List<OCFile> getAllFavorites() {
+        String selection = ProviderTableMeta.FILE_ACCOUNT_OWNER + AND + ProviderTableMeta.FILE_FAVORITE + " =?";
+        String[] selectionArgs = new String[]{user.getAccountName(), "1"};
+
+        return getFiles(selection, selectionArgs);
+    }
 
     public List<OCFile> getAllFiles() {
         String selection = ProviderTableMeta.FILE_ACCOUNT_OWNER + "= ? ";
         String[] selectionArgs = new String[]{user.getAccountName()};
-
+        
+        return getFiles(selection, selectionArgs);
+    }
+    
+    private List<OCFile> getFiles(String selection, String[] selectionArgs) {
         List<OCFile> folderContent = new ArrayList<>();
 
         Uri requestURI = ProviderTableMeta.CONTENT_URI_DIR;
