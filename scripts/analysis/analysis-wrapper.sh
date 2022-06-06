@@ -22,8 +22,6 @@ spotbugsValue=$?
 # 1: count was increased
 # 2: count stayed the same
 
-source scripts/lib.sh
-
 echo "Branch: $BRANCH"
 
 if [ "$BRANCH" = $stableBranch ]; then
@@ -45,13 +43,6 @@ else
 
     echo "New spotbugs results at https://www.kaminsky.me/nc-dev/$repository-findbugs/${BUILD_NUMBER}.html"
     curl 2>/dev/null -u "${LOG_USERNAME}:${LOG_PASSWORD}" -X PUT "https://nextcloud.kaminsky.me/remote.php/webdav/$repository-findbugs/${BUILD_NUMBER}.html" --upload-file app/build/reports/spotbugs/spotbugs.html
-
-    # delete all old comments, starting with Codacy
-    oldComments=$(curl_gh -X GET "https://api.github.com/repos/nextcloud/$repository/issues/${PR_NUMBER}/comments" | jq '.[] | select((.user.login | contains("github-actions")) and  (.body | test("<h1>Codacy.*"))) | .id')
-
-    echo "$oldComments" | while read -r comment ; do
-        curl_gh -X DELETE "https://api.github.com/repos/nextcloud/$repository/issues/comments/$comment"
-    done
 
     # check library, only if base branch is master
     baseBranch=$(scripts/analysis/getBranchBase.sh "${PR_NUMBER}" | tr -d "\"")
@@ -131,8 +122,8 @@ else
         notNull="org.jetbrains.annotations.NotNull is used. Please use androidx.annotation.NonNull instead.<br><br>"
     fi
 
-    payload="{ \"body\" : \"$codacyResult $lintResult $spotbugsResult $checkLibraryMessage $lintMessage $spotbugsMessage $gplayLimitation $notNull\" }"
-    curl_gh -X POST "https://api.github.com/repos/nextcloud/$repository/issues/${PR_NUMBER}/comments" -d "$payload"
+    bodyContent="$codacyResult $lintResult $spotbugsResult $checkLibraryMessage $lintMessage $spotbugsMessage $gplayLimitation $notNull"
+    echo "$bodyContent" >> "$GITHUB_STEP_SUMMARY"
 
     if [ ! -z "$gplayLimitation" ]; then
         exit 1
