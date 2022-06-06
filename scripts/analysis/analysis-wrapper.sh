@@ -91,13 +91,6 @@ else
         lintWarningOld=0
     fi
 
-    if [ $stableBranch = "master" ] ; then
-        codacyValue=$(curl 2>/dev/null https://app.codacy.com/dashboards/breakdown\?projectId\=44248 | grep "total issues" | cut -d">" -f3 | cut -d"<" -f1)
-        codacyResult="<h1>Codacy</h1>$codacyValue"
-    else
-        codacyResult=""
-    fi
-
     lintResult="<h1>Lint</h1><table width='500' cellpadding='5' cellspacing='2'><tr class='tablerow0'><td>Type</td><td><a href='https://www.kaminsky.me/nc-dev/$repository-lint/$stableBranch.html'>$stableBranch</a></td><td><a href='https://www.kaminsky.me/nc-dev/$repository-lint/${BUILD_NUMBER}.html'>PR</a></td></tr><tr class='tablerow1'><td>Warnings</td><td>$lintWarningOld</td><td>$lintWarningNew</td></tr><tr class='tablerow0'><td>Errors</td><td>$lintErrorOld</td><td>$lintErrorNew</td></tr></table>"
 
     spotbugsResult="<h1>SpotBugs</h1>$(scripts/analysis/spotbugsComparison.py "/tmp/$stableBranch.xml" app/build/reports/spotbugs/gplayDebug.xml --link-new "https://www.kaminsky.me/nc-dev/$repository-findbugs/${BUILD_NUMBER}.html" --link-base "https://www.kaminsky.me/nc-dev/$repository-findbugs/$stableBranch.html")"
@@ -122,7 +115,7 @@ else
         notNull="org.jetbrains.annotations.NotNull is used. Please use androidx.annotation.NonNull instead.<br><br>"
     fi
 
-    bodyContent="$codacyResult $lintResult $spotbugsResult $checkLibraryMessage $lintMessage $spotbugsMessage $gplayLimitation $notNull"
+    bodyContent="$lintResult $spotbugsResult $checkLibraryMessage $lintMessage $spotbugsMessage $gplayLimitation $notNull"
     echo "$bodyContent" >> "$GITHUB_STEP_SUMMARY"
 
     if [ ! -z "$gplayLimitation" ]; then
