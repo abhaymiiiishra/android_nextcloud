@@ -24,7 +24,6 @@
 
 package com.owncloud.android.ui.adapter;
 
-import android.accounts.Account;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -507,10 +506,10 @@ public class UploadListAdapter extends SectionedRecyclerViewAdapter<SectionedVie
                                                          OCUpload item,
                                                          String status) {
         String remotePath = item.getRemotePath();
-        OCFile ocFile = storageManager.getFileByPath(remotePath);
+        OCFile ocFile = storageManager.getFileByDecryptedRemotePath(remotePath);
 
         if (ocFile == null) { // Remote file doesn't exist, try to refresh folder
-            OCFile folder = storageManager.getFileByPath(new File(remotePath).getParent() + "/");
+            OCFile folder = storageManager.getFileByDecryptedRemotePath(new File(remotePath).getParent() + "/");
             if (folder != null && folder.isFolder()) {
                 this.refreshFolder(itemViewHolder, user, folder, (caller, result) -> {
                     itemViewHolder.binding.uploadStatus.setText(status);
