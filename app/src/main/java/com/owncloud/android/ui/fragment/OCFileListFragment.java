@@ -43,7 +43,6 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.Toast;
 
-import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.behavior.HideBottomViewOnScrollBehavior;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -534,10 +533,11 @@ public class OCFileListFragment extends ExtendedListFragment implements
     @Override
     public void uploadFiles() {
         UploadFilesActivity.startUploadActivityForResult(
-                getActivity(),
-                ((FileActivity) getActivity()).getUser().orElseThrow(RuntimeException::new),
-                FileDisplayActivity.REQUEST_CODE__SELECT_FILES_FROM_FILE_SYSTEM
-        );
+            getActivity(),
+            ((FileActivity) getActivity()).getUser().orElseThrow(RuntimeException::new),
+            FileDisplayActivity.REQUEST_CODE__SELECT_FILES_FROM_FILE_SYSTEM,
+            getCurrentFile().isEncrypted()
+                                                        );
     }
 
     @Override
