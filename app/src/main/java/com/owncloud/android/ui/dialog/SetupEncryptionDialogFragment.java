@@ -50,9 +50,13 @@ import com.owncloud.android.utils.EncryptionUtils;
 import com.owncloud.android.utils.theme.ThemeButtonUtils;
 import com.owncloud.android.utils.theme.ThemeColorUtils;
 
+import org.conscrypt.OpenSSLRSAPublicKey;
+
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -283,12 +287,12 @@ public class SetupEncryptionDialogFragment extends DialogFragment implements Inj
             //  - decrypt private key, store unencrypted private key in database
 
             GetPublicKeyOperation publicKeyOperation = new GetPublicKeyOperation();
-            RemoteOperationResult publicKeyResult = publicKeyOperation.execute(user, getContext());
+            RemoteOperationResult<String> publicKeyResult = publicKeyOperation.execute(user, getContext());
 
             if (publicKeyResult.isSuccess()) {
                 Log_OC.d(TAG, "public key successful downloaded for " + user.getAccountName());
 
-                String publicKeyFromServer = (String) publicKeyResult.getData().get(0);
+                String publicKeyFromServer = publicKeyResult.getResultData();
                 arbitraryDataProvider.storeOrUpdateKeyValue(user.getAccountName(),
                                                             EncryptionUtils.PUBLIC_KEY,
                                                             publicKeyFromServer);
@@ -345,7 +349,7 @@ public class SetupEncryptionDialogFragment extends DialogFragment implements Inj
             //  - encrypt private key, push key to server, store unencrypted private key in database
 
             try {
-                String publicKey;
+                String publicKeyString;
 
                 // Create public/private key pair
                 KeyPair keyPair = EncryptionUtils.generateKeyPair();
@@ -359,8 +363,20 @@ public class SetupEncryptionDialogFragment extends DialogFragment implements Inj
                 RemoteOperationResult result = operation.execute(user, getContext());
 
                 if (result.isSuccess()) {
+                    publicKeyString = (String) result.getData().get(0);
+
+                    // check key
+                    RSAPrivateCrtKey privateKey = (RSAPrivateCrtKey) keyPair.getPrivate();
+                    OpenSSLRSAPublicKey publicKey = EncryptionUtils.convertPublicKeyFromString(publicKeyString);
+
+                    BigInteger modulusPublic = publicKey.getModulus();
+                    BigInteger modulusPrivate = privateKey.getModulus();
+
+                    if (modulusPrivate.compareTo(modulusPublic) != 0) {
+                        throw new RuntimeException("Wrong CSR returned");
+                    }
+
                     Log_OC.d(TAG, "public key success");
-                    publicKey = (String) result.getData().get(0);
                 } else {
                     keyResult = KEY_FAILED;
                     return "";
@@ -379,11 +395,15 @@ public class SetupEncryptionDialogFragment extends DialogFragment implements Inj
                 if (storePrivateKeyResult.isSuccess()) {
                     Log_OC.d(TAG, "private key success");
 
-                    arbitraryDataProvider.storeOrUpdateKeyValue(user.getAccountName(), EncryptionUtils.PRIVATE_KEY,
-                            privateKeyString);
-                    arbitraryDataProvider.storeOrUpdateKeyValue(user.getAccountName(), EncryptionUtils.PUBLIC_KEY, publicKey);
-                    arbitraryDataProvider.storeOrUpdateKeyValue(user.getAccountName(), EncryptionUtils.MNEMONIC,
-                            generateMnemonicString(true));
+                    arbitraryDataProvider.storeOrUpdateKeyValue(user.getAccountName(),
+                                                                EncryptionUtils.PRIVATE_KEY,
+                                                                privateKeyString);
+                    arbitraryDataProvider.storeOrUpdateKeyValue(user.getAccountName(),
+                                                                EncryptionUtils.PUBLIC_KEY,
+                                                                publicKeyString);
+                    arbitraryDataProvider.storeOrUpdateKeyValue(user.getAccountName(),
+                                                                EncryptionUtils.MNEMONIC,
+                                                                generateMnemonicString(true));
 
                     keyResult = KEY_CREATED;
                     return (String) storePrivateKeyResult.getData().get(0);

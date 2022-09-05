@@ -38,6 +38,8 @@ import com.owncloud.android.lib.resources.e2ee.ToggleEncryptionRemoteOperation;
 import com.owncloud.android.lib.resources.files.ReadFileRemoteOperation;
 import com.owncloud.android.lib.resources.status.OCCapability;
 import com.owncloud.android.lib.resources.status.OwnCloudVersion;
+import com.owncloud.android.lib.resources.users.DeletePrivateKeyOperation;
+import com.owncloud.android.lib.resources.users.DeletePublicKeyOperation;
 import com.owncloud.android.lib.resources.users.GetPrivateKeyOperation;
 import com.owncloud.android.lib.resources.users.GetPublicKeyOperation;
 import com.owncloud.android.lib.resources.users.SendCSROperation;
@@ -49,6 +51,8 @@ import com.owncloud.android.utils.CsrHelper;
 import com.owncloud.android.utils.EncryptionUtils;
 import com.owncloud.android.utils.FileStorageUtils;
 
+import org.bouncycastle.operator.OperatorCreationException;
+import org.conscrypt.OpenSSLRSAPublicKey;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -57,7 +61,11 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -473,6 +481,34 @@ public class EndToEndRandomIT extends AbstractOnServerIT {
         assertFalse(new File(uploadedFile.getStoragePath()).exists());
     }
 
+    @Test
+    public void testCheckCSR() throws NoSuchAlgorithmException, IOException, OperatorCreationException, CertificateException {
+        deleteKeys();
+
+        // Create public/private key pair
+        KeyPair keyPair = EncryptionUtils.generateKeyPair();
+
+        // create CSR
+        AccountManager accountManager = AccountManager.get(targetContext);
+        String userId = accountManager.getUserData(account, AccountUtils.Constants.KEY_USER_ID);
+        String urlEncoded = CsrHelper.generateCsrPemEncodedString(keyPair, userId);
+
+        SendCSROperation operation = new SendCSROperation(urlEncoded);
+        RemoteOperationResult result = operation.execute(account, targetContext);
+
+        assertTrue(result.isSuccess());
+        String publicKeyString = (String) result.getData().get(0);
+
+        // check key
+        RSAPrivateCrtKey privateKey = (RSAPrivateCrtKey) keyPair.getPrivate();
+        OpenSSLRSAPublicKey publicKey = EncryptionUtils.convertPublicKeyFromString(publicKeyString);
+
+        BigInteger modulusPublic = publicKey.getModulus();
+        BigInteger modulusPrivate = privateKey.getModulus();
+
+        assertEquals(modulusPrivate, modulusPublic);
+    }
+
     private void deleteFile(int i) {
         ArrayList<OCFile> files = new ArrayList<>();
         for (OCFile file : getStorageManager().getFolderContent(currentFolder, false)) {
@@ -528,11 +564,11 @@ public class EndToEndRandomIT extends AbstractOnServerIT {
     private void useExistingKeys() throws Exception {
         // download them from server
         GetPublicKeyOperation publicKeyOperation = new GetPublicKeyOperation();
-        RemoteOperationResult publicKeyResult = publicKeyOperation.execute(account, targetContext);
+        RemoteOperationResult<String> publicKeyResult = publicKeyOperation.execute(account, targetContext);
 
         assertTrue("Result code:" + publicKeyResult.getHttpCode(), publicKeyResult.isSuccess());
 
-        String publicKeyFromServer = (String) publicKeyResult.getData().get(0);
+        String publicKeyFromServer = publicKeyResult.getResultData();
         arbitraryDataProvider.storeOrUpdateKeyValue(account.name,
                                                     EncryptionUtils.PUBLIC_KEY,
                                                     publicKeyFromServer);
@@ -558,7 +594,9 @@ public class EndToEndRandomIT extends AbstractOnServerIT {
     TODO do not c&p code
      */
     private static void createKeys() throws Exception {
-        String publicKey;
+        deleteKeys();
+
+        String publicKeyString;
 
         // Create public/private key pair
         KeyPair keyPair = EncryptionUtils.generateKeyPair();
@@ -572,7 +610,18 @@ public class EndToEndRandomIT extends AbstractOnServerIT {
         RemoteOperationResult result = operation.execute(account, targetContext);
 
         if (result.isSuccess()) {
-            publicKey = (String) result.getData().get(0);
+            publicKeyString = (String) result.getData().get(0);
+
+            // check key
+            RSAPrivateCrtKey privateKey = (RSAPrivateCrtKey) keyPair.getPrivate();
+            OpenSSLRSAPublicKey publicKey = EncryptionUtils.convertPublicKeyFromString(publicKeyString);
+
+            BigInteger modulusPublic = publicKey.getModulus();
+            BigInteger modulusPrivate = privateKey.getModulus();
+
+            if (modulusPrivate.compareTo(modulusPublic) != 0) {
+                throw new RuntimeException("Wrong CSR returned");
+            }
         } else {
             throw new Exception("failed to send CSR", result.getException());
         }
@@ -590,11 +639,22 @@ public class EndToEndRandomIT extends AbstractOnServerIT {
         if (storePrivateKeyResult.isSuccess()) {
             arbitraryDataProvider.storeOrUpdateKeyValue(account.name, EncryptionUtils.PRIVATE_KEY,
                                                         privateKeyString);
-            arbitraryDataProvider.storeOrUpdateKeyValue(account.name, EncryptionUtils.PUBLIC_KEY, publicKey);
+            arbitraryDataProvider.storeOrUpdateKeyValue(account.name, EncryptionUtils.PUBLIC_KEY, publicKeyString);
             arbitraryDataProvider.storeOrUpdateKeyValue(account.name, EncryptionUtils.MNEMONIC,
                                                         generateMnemonicString());
         } else {
             throw new RuntimeException("Error uploading private key!");
+        }
+    }
+
+    private static void deleteKeys() {
+        RemoteOperationResult<PrivateKey> privateKeyRemoteOperationResult = new GetPrivateKeyOperation().execute(client);
+        RemoteOperationResult<String> publicKeyRemoteOperationResult = new GetPublicKeyOperation().execute(client);
+
+        if (privateKeyRemoteOperationResult.isSuccess() || publicKeyRemoteOperationResult.isSuccess()) {
+            // delete keys
+            assertTrue(new DeletePrivateKeyOperation().execute(client).isSuccess());
+            assertTrue(new DeletePublicKeyOperation().execute(client).isSuccess());
         }
     }
 

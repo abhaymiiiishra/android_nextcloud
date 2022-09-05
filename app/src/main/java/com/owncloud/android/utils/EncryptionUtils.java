@@ -45,6 +45,7 @@ import com.owncloud.android.lib.resources.e2ee.UpdateMetadataRemoteOperation;
 import com.owncloud.android.operations.UploadException;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.conscrypt.OpenSSLRSAPublicKey;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -849,5 +850,17 @@ public final class EncryptionUtils {
         } else {
             return new RemoteOperationResult(new Exception("No token available"));
         }
+    }
+
+    public static OpenSSLRSAPublicKey convertPublicKeyFromString(String string) throws CertificateException {
+        String trimmedCert = string.replace("-----BEGIN CERTIFICATE-----\n", "")
+            .replace("-----END CERTIFICATE-----\n", "");
+        byte[] encodedCert = trimmedCert.getBytes(StandardCharsets.UTF_8);
+        byte[] decodedCert = org.apache.commons.codec.binary.Base64.decodeBase64(encodedCert);
+
+        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+        InputStream in = new ByteArrayInputStream(decodedCert);
+        X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(in);
+        return (OpenSSLRSAPublicKey) certificate.getPublicKey();
     }
 }
