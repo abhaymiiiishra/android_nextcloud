@@ -50,13 +50,12 @@ import com.owncloud.android.utils.EncryptionUtils;
 import com.owncloud.android.utils.theme.ThemeButtonUtils;
 import com.owncloud.android.utils.theme.ThemeColorUtils;
 
-import org.conscrypt.OpenSSLRSAPublicKey;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -367,7 +366,7 @@ public class SetupEncryptionDialogFragment extends DialogFragment implements Inj
 
                     // check key
                     RSAPrivateCrtKey privateKey = (RSAPrivateCrtKey) keyPair.getPrivate();
-                    OpenSSLRSAPublicKey publicKey = EncryptionUtils.convertPublicKeyFromString(publicKeyString);
+                    RSAPublicKey publicKey = EncryptionUtils.convertPublicKeyFromString(publicKeyString);
 
                     BigInteger modulusPublic = publicKey.getModulus();
                     BigInteger modulusPrivate = privateKey.getModulus();

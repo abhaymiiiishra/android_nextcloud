@@ -45,7 +45,6 @@ import com.owncloud.android.lib.resources.e2ee.UpdateMetadataRemoteOperation;
 import com.owncloud.android.operations.UploadException;
 
 import org.apache.commons.httpclient.HttpStatus;
-import org.conscrypt.OpenSSLRSAPublicKey;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -69,6 +68,7 @@ import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -852,7 +852,7 @@ public final class EncryptionUtils {
         }
     }
 
-    public static OpenSSLRSAPublicKey convertPublicKeyFromString(String string) throws CertificateException {
+    public static RSAPublicKey convertPublicKeyFromString(String string) throws CertificateException {
         String trimmedCert = string.replace("-----BEGIN CERTIFICATE-----\n", "")
             .replace("-----END CERTIFICATE-----\n", "");
         byte[] encodedCert = trimmedCert.getBytes(StandardCharsets.UTF_8);
@@ -861,6 +861,6 @@ public final class EncryptionUtils {
         CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
         InputStream in = new ByteArrayInputStream(decodedCert);
         X509Certificate certificate = (X509Certificate) certFactory.generateCertificate(in);
-        return (OpenSSLRSAPublicKey) certificate.getPublicKey();
+        return (RSAPublicKey) certificate.getPublicKey();
     }
 }
