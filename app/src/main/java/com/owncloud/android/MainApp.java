@@ -272,7 +272,7 @@ public class MainApp extends MultiDexApplication implements HasAndroidInjector {
     @SuppressFBWarnings("ST")
     @Override
     public void onCreate() {
-        enableStrictMode();
+        // enableStrictMode();
 
         setAppTheme(preferences.getDarkThemeMode());
         super.onCreate();
