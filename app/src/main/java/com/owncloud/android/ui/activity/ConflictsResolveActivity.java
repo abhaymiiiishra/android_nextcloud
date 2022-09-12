@@ -132,16 +132,19 @@ public class ConflictsResolveActivity extends FileActivity implements OnConflict
                     break;
                 case KEEP_BOTH: // Upload
                     FileUploader.uploadUpdateFile(
-                            getBaseContext(),
-                            user,
-                            file,
-                            localBehaviour,
-                            NameCollisionPolicy.RENAME
+                        getBaseContext(),
+                        user,
+                        file,
+                        localBehaviour,
+                        NameCollisionPolicy.RENAME
                                                  );
 
                     uploadsStorageManager.removeUpload(upload);
                     break;
                 case KEEP_SERVER: // Download
+                    if (newFile.isEncrypted()) {
+                        return;
+                    }
                     if (!shouldDeleteLocal()) {
                         // Overwrite local file
                         Intent intent = new Intent(getBaseContext(), FileDownloader.class);
