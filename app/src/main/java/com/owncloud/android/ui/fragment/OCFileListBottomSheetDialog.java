@@ -46,8 +46,6 @@ import com.owncloud.android.utils.theme.ThemeColorUtils;
 import com.owncloud.android.utils.theme.ThemeDrawableUtils;
 import com.owncloud.android.utils.theme.ThemeUtils;
 
-import javax.inject.Inject;
-
 /**
  * FAB menu {@link android.app.Dialog} styled as a bottom sheet for main actions.
  */
@@ -102,9 +100,8 @@ public class OCFileListBottomSheetDialog extends BottomSheetDialog implements In
         binding.addToCloud.setText(getContext().getResources().getString(R.string.add_to_cloud,
                                                                          themeUtils.getDefaultDisplayNameForRootFolder(getContext())));
 
-        OCCapability capability = fileActivity.getCapabilities();
-        if (capability != null &&
-            capability.getRichDocuments().isTrue() &&
+        OCCapability capability = fileActivity.getStorageManager().getCapability(user.getAccountName());
+        if (capability.getRichDocuments().isTrue() &&
             capability.getRichDocumentsDirectEditing().isTrue() &&
             capability.getRichDocumentsTemplatesAvailable().isTrue() &&
             !file.isEncrypted()) {
@@ -154,6 +151,12 @@ public class OCFileListBottomSheetDialog extends BottomSheetDialog implements In
             binding.menuDirectCameraUpload.setVisibility(View.GONE);
         }
 
+        if (capability.getEndToEndEncryption().isTrue()) {
+            binding.menuEncryptedMkdir.setVisibility(View.VISIBLE);
+        } else {
+            binding.menuEncryptedMkdir.setVisibility(View.GONE);
+        }
+
         // create rich workspace
         if (FileMenuFilter.isEditorAvailable(getContext().getContentResolver(),
                                              user,
@@ -188,6 +191,11 @@ public class OCFileListBottomSheetDialog extends BottomSheetDialog implements In
 
         binding.menuMkdir.setOnClickListener(v -> {
             actions.createFolder();
+            dismiss();
+        });
+
+        binding.menuEncryptedMkdir.setOnClickListener(v -> {
+            actions.createEncryptedFolder();
             dismiss();
         });
 
